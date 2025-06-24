@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mic Visual (Web Audio)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: black;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    #startBtn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 1em 2em;
+      font-size: 20px;
+      background: white;
+      border: none;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <button id="startBtn">Tap to Start Mic</button>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    let audioContext, analyser, micSource;
+    let dataArray;
+
+    startBtn.addEventListener("click", async () => {
+      startBtn.style.display = "none";
+
+      // ログ表示用関数
+      const log = (msg) => {
+        console.log(msg);
+        document.body.innerHTML += `<pre style="color:white; position: absolute; top: 10px; left: 10px;">${msg}</pre>`;
+      };
+
+      log("navigator = " + typeof navigator);
+      log("navigator.mediaDevices = " + typeof navigator.mediaDevices);
+
+      // AudioContext 作成
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        log("❌ getUserMedia 未対応 or 無効");
+        alert("このブラウザはマイク非対応です。HTTPS接続 or Chrome最新版を使用してください。");
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        log("✅ マイク取得成功");
+
+        micSource = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048;
+
+        micSource.connect(analyser);
+
+        const bufferLength = analyser.fftSize;
+        dataArray = new Uint8Array(bufferLength);
+
+        animate(); // 🎬 明滅開始
+
+      } catch (err) {
+        log("❌ マイク取得失敗: " + err.name + " - " + err.message);
+        alert("マイク取得失敗: " + err.name + " - " + err.message);
+      }
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      analyser.getByteTimeDomainData(dataArray);
+
+      let sum = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        let val = dataArray[i] - 128;
+        sum += val * val;
+      }
+      let rms = Math.sqrt(sum / dataArray.length);
+      let brightness = Math.min(100, rms * 3);
+
+      document.body.style.backgroundColor = `hsl(200, 100%, ${10 + brightness}%)`;
+    }
+  </script>
+</body>
+</html>
