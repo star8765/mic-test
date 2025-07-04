@@ -97,9 +97,9 @@
         }
 
         let rms = Math.sqrt(sum / dataArray.length);
-        smoothRMS = smoothRMS * 0.9 + rms * 0.1;
+        smoothRMS = smoothRMS * 0.95 + rms * 0.05;
 
-        let brightness = Math.min(100, smoothRMS * 3);
+        let brightness = Math.min(100, smoothRMS * 1.5);
 
         // 🎯 RGB→HSL変換して、色相だけ使う
         const tempEl = document.createElement("div");
