@@ -3,26 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <title>Mic Visual</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
 
     <!-- ✅ スマホ対応設定 -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+
     <!-- ✅ iOSホーム画面追加対応 -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
     <link rel="apple-touch-icon" href="icon.png" />
 
     <style>
+      /* フルスクリーン用のスタイル */
       html,
       body {
-        margin: 0;
-        padding: 0;
         height: 100%;
-        background: black;
-        overflow: auto;
-        -webkit-overflow-scrolling: touch;
-        touch-action: manipulation;
-        font-family: sans-serif;
+        margin: 0;
+        overflow: hidden;
+      }
+
+      #fullscreen {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: black; /* 必要に応じて変更 */
       }
 
       #startBtn {
@@ -68,30 +83,87 @@
         border: 3px solid white;
         transform: scale(1.3);
       }
+      .fs-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border: none;
+        border-radius: 30px;
+        background-color: rgba(255, 255, 255, 0.9);
+        color: black;
+        font-size: 24px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        z-index: 1000;
+      }
     </style>
   </head>
   <body>
     <button id="startBtn">Tap to Start Mic</button>
     <div id="palette"></div>
+    <button class="fs-button" onclick="enterFullScreen()">
+      <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+    </button>
 
     <script>
       const colorOptions = [
-        "#FFD93D", "#3ABEFF", "#A3F948", "#FF7CA3",
-        "#B067D1", "#2EC27E", "#FF914D", "#FFFFFF"
+        "#FFD93D",
+        "#3ABEFF",
+        "#A3F948",
+        "#FF7CA3",
+        "#B067D1",
+        "#2EC27E",
+        "#FF914D",
+        "#FFFFFF",
       ];
       let selectedColor = colorOptions[0];
 
       const startBtn = document.getElementById("startBtn");
       const palette = document.getElementById("palette");
-      let audioContext, analyser, micSource, dataArray, smoothRMS = 0;
+      let audioContext,
+        analyser,
+        micSource,
+        dataArray,
+        smoothRMS = 0;
 
       // ✅ iOSアドレスバーを隠す
       window.addEventListener("load", () => {
         setTimeout(() => window.scrollTo(0, 1), 100);
       });
+      // フルスクリーン開始
+      function enterFullScreen() {
+        const element = document.documentElement; // HTMLタグ全体をフルスクリーンに
+        if (element.requestFullscreen) {
+          element.requestFullscreen();
+        } else if (element.mozRequestFullScreen) {
+          // Firefox
+          element.mozRequestFullScreen();
+        } else if (element.webkitRequestFullscreen) {
+          // Safari / Chrome
+          element.webkitRequestFullscreen();
+        } else if (element.msRequestFullscreen) {
+          // IE/Edge
+          element.msRequestFullscreen();
+        }
+      }
+
+      // フルスクリーン解除
+      function exitFullScreen() {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          // Safari
+          document.webkitExitFullscreen();
+        }
+      }
 
       // 🎨 カラーパレット生成
-      colorOptions.forEach(color => {
+      colorOptions.forEach((color) => {
         const btn = document.createElement("button");
         btn.className = "colorBtn";
         btn.style.backgroundColor = color;
@@ -104,7 +176,7 @@
       });
 
       function updatePalette() {
-        document.querySelectorAll(".colorBtn").forEach(btn => {
+        document.querySelectorAll(".colorBtn").forEach((btn) => {
           if (btn.getAttribute("data-color") === selectedColor) {
             btn.classList.add("selected");
           } else {
@@ -120,7 +192,9 @@
 
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+          });
 
           micSource = audioContext.createMediaStreamSource(stream);
           analyser = audioContext.createAnalyser();
@@ -149,7 +223,9 @@
         let brightness = Math.min(100, smoothRMS * 1.5);
 
         const hsl = rgbToHslString(selectedColor);
-        document.body.style.backgroundColor = `hsl(${hsl.h}, ${hsl.s}%, ${10 + brightness}%)`;
+        document.body.style.backgroundColor = `hsl(${hsl.h}, ${hsl.s}%, ${
+          10 + brightness
+        }%)`;
       }
 
       // 🎨 hex → HSL
@@ -158,8 +234,11 @@
         let g = parseInt(hex.slice(3, 5), 16) / 255;
         let b = parseInt(hex.slice(5, 7), 16) / 255;
 
-        let max = Math.max(r, g, b), min = Math.min(r, g, b);
-        let h, s, l = (max + min) / 2;
+        let max = Math.max(r, g, b),
+          min = Math.min(r, g, b);
+        let h,
+          s,
+          l = (max + min) / 2;
 
         if (max === min) {
           h = s = 0;
@@ -167,9 +246,15 @@
           let d = max - min;
           s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
           switch (max) {
-            case r: h = ((g - b) / d + (g < b ? 6 : 0)); break;
-            case g: h = ((b - r) / d + 2); break;
-            case b: h = ((r - g) / d + 4); break;
+            case r:
+              h = (g - b) / d + (g < b ? 6 : 0);
+              break;
+            case g:
+              h = (b - r) / d + 2;
+              break;
+            case b:
+              h = (r - g) / d + 4;
+              break;
           }
           h *= 60;
         }
@@ -177,7 +262,7 @@
         return {
           h: Math.round(h),
           s: Math.round(s * 100),
-          l: Math.round(l * 100)
+          l: Math.round(l * 100),
         };
       }
     </script>
