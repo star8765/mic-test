@@ -100,6 +100,7 @@
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
         cursor: pointer;
         z-index: 1000;
+        transition: opacity 0.5s ease;
       }
     </style>
   </head>
@@ -137,20 +138,23 @@
       });
       // フルスクリーン開始
       function enterFullScreen() {
-        const element = document.documentElement; // HTMLタグ全体をフルスクリーンに
+        const element = document.documentElement;
+
         if (element.requestFullscreen) {
           element.requestFullscreen();
-        } else if (element.mozRequestFullScreen) {
-          // Firefox
-          element.mozRequestFullScreen();
         } else if (element.webkitRequestFullscreen) {
-          // Safari / Chrome
           element.webkitRequestFullscreen();
-        } else if (element.msRequestFullscreen) {
-          // IE/Edge
-          element.msRequestFullscreen();
         }
+
+        // ボタンを非表示にする
+        document.querySelector(".fs-button").style.display = "none";
       }
+      setTimeout(() => {
+        document.querySelector(".fs-button").style.opacity = "0";
+        setTimeout(() => {
+          document.querySelector(".fs-button").style.display = "none";
+        }, 500); // フェードアウト後に完全非表示
+      }, 1000); // 1秒後に消える
 
       // フルスクリーン解除
       function exitFullScreen() {
