@@ -48,6 +48,19 @@
       startBtn.addEventListener("click", async () => {
         startBtn.style.display = "none";
 
+        // ✅ フルスクリーン表示要求（失敗しても続行）
+        try {
+          if (document.body.requestFullscreen) {
+            await document.body.requestFullscreen();
+          } else if (document.body.webkitRequestFullscreen) {
+            // iOS Safari 対応
+            document.body.webkitRequestFullscreen();
+          }
+        } catch (e) {
+          console.warn("フルスクリーンにできませんでした:", e);
+        }
+
+        // 以下は元のマイク起動処理
         log("navigator = " + typeof navigator);
         log("navigator.mediaDevices = " + typeof navigator.mediaDevices);
 
@@ -61,16 +74,13 @@
           return;
         }
 
-        // ✅ マイク取得成功後はログを出力せず、先に全削除
         try {
           const stream = await navigator.mediaDevices.getUserMedia({
             audio: true,
           });
 
-          document.querySelectorAll(".log").forEach((el) => el.remove()); // ← 先に削除
-          // log("✅ マイク取得成功"); ← これは表示させない or console.log のみに
+          document.querySelectorAll(".log").forEach((el) => el.remove());
 
-          // 以下処理はそのままでOK
           micSource = audioContext.createMediaStreamSource(stream);
           analyser = audioContext.createAnalyser();
           analyser.fftSize = 2048;
