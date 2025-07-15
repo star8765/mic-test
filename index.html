@@ -231,7 +231,6 @@
 
         let rawBrightness = (smoothRMS * GAIN_MULTIPLIER) / 128;
         let brightness = Math.pow(Math.min(1, rawBrightness), 0.5); // ← 小さい値も強調
-        brightness = Math.max(0.1, brightness); // ← 常に少し光らせる
 
         const hsl = rgbToHslString(selectedColor);
         document.body.style.backgroundColor = `hsl(${hsl.h}, ${hsl.s}%, ${
