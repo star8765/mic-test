@@ -228,13 +228,13 @@
         }
 
         let rms = Math.sqrt(sum / dataArray.length);
-        smoothRMS = smoothRMS * 0.9 + rms * 0.1; // 少し敏感に
+        smoothRMS = smoothRMS * 0.9 + rms * 0.1;
 
-        let brightness = Math.min(1, (smoothRMS * GAIN_MULTIPLIER) / 128); // 正規化
+        let brightness = Math.min(1, (smoothRMS * GAIN_MULTIPLIER) / 128);
         const hsl = rgbToHslString(selectedColor);
-        document.body.style.backgroundColor = hsl(${hsl.h}, ${hsl.s}%, ${
+        document.body.style.backgroundColor = `hsl(${hsl.h}, ${hsl.s}%, ${
           BASE_LIGHTNESS + brightness * LIGHTNESS_RANGE
-        }%);
+        }%)`;
       }
 
       // 🎨 hex → HSL
