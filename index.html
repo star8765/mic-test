@@ -212,10 +212,9 @@
         }
       });
 
-      // 明滅の反応感度調整
-      const GAIN_MULTIPLIER = 10; // ← 倍率を上げて感度UP
-      const BASE_LIGHTNESS = 20; // ← 暗さの下限（％）
-      const LIGHTNESS_RANGE = 90; // ← 明滅の変動幅（％）
+      const GAIN_MULTIPLIER = 30;
+      const BASE_LIGHTNESS = 10;
+      const LIGHTNESS_RANGE = 90;
 
       function animate() {
         requestAnimationFrame(animate);
@@ -228,9 +227,12 @@
         }
 
         let rms = Math.sqrt(sum / dataArray.length);
-        smoothRMS = smoothRMS * 0.9 + rms * 0.1; // 少し敏感に
+        smoothRMS = smoothRMS * 0.7 + rms * 0.3;
 
-        let brightness = Math.min(1, (smoothRMS * GAIN_MULTIPLIER) / 128); // 正規化
+        let rawBrightness = (smoothRMS * GAIN_MULTIPLIER) / 128;
+        let brightness = Math.pow(Math.min(1, rawBrightness), 0.5); // ← 小さい値も強調
+        brightness = Math.max(0.1, brightness); // ← 常に少し光らせる
+
         const hsl = rgbToHslString(selectedColor);
         document.body.style.backgroundColor = `hsl(${hsl.h}, ${hsl.s}%, ${
           BASE_LIGHTNESS + brightness * LIGHTNESS_RANGE
