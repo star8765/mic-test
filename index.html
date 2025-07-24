@@ -242,7 +242,7 @@
         blend = Math.min(1, blend); // 念のため制限
 
         const target = hexToRgb(selectedColor);
-        const base = { r: 255, g: 255, b: 255 }; // ← 明るめのグレー〜白背景
+        const base = { r: 55, g: 55, b: 55 }; // ← 明るめのグレー〜白背景
 
         const lerpColor = {
           r: Math.round(base.r + (target.r - base.r) * blend),
