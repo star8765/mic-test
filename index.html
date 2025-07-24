@@ -226,7 +226,7 @@
         let rms = Math.sqrt(sum / dataArray.length);
         smoothRMS = smoothRMS * 0.9 + rms * 0.1;
 
-        const GAIN_MULTIPLIER = 8;
+        const GAIN_MULTIPLIER = 15;
         const BASE_BLEND = 0.2; // ← これが HSL の BASE_LIGHTNESS に相当（0〜1）
         const MAX_BLEND_RANGE = 0.7; // ← これが LIGHTNESS_RANGE に相当（0〜1）
 
