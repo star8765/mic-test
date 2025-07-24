@@ -94,6 +94,26 @@
         z-index: 1000;
         transition: opacity 0.5s ease;
       }
+      .fs-exit-button {
+        position: fixed;
+        bottom: 20px;
+        right: 100px;
+        width: 60px;
+        height: 60px;
+        border: none;
+        border-radius: 30px;
+        background-color: rgba(255, 255, 255, 0.9);
+        color: black;
+        font-size: 24px;
+        display: none; /* ← 初期状態では非表示 */
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        z-index: 1000;
+        transition: opacity 0.5s ease;
+      }
+
       #memo {
         position: absolute;
         top: 80px; /* パレットが top: 30px なので、その下あたり */
@@ -108,9 +128,12 @@
   <body>
     <button id="startBtn">Tap to Start Mic</button>
     <div id="palette"></div>
-    <div id="memo">メモ追加</div>
+    <div id="memo">フルスクリーン追加</div>
     <button class="fs-button" onclick="enterFullScreen()">
       <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
+    </button>
+    <button class="fs-exit-button" onclick="exitFullScreen()">
+      <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
     </button>
 
     <script>
@@ -144,24 +167,24 @@
           element.webkitRequestFullscreen();
         }
 
-        // ボタンを非表示にする
+        // フルスクリーンボタンを非表示に
         document.querySelector(".fs-button").style.display = "none";
+        // 解除ボタンを表示
+        document.querySelector(".fs-exit-button").style.display = "flex";
       }
-      setTimeout(() => {
-        document.querySelector(".fs-button").style.opacity = "0";
-        setTimeout(() => {
-          document.querySelector(".fs-button").style.display = "none";
-        }, 500); // フェードアウト後に完全非表示
-      }, 1000); // 1秒後に消える
 
       // フルスクリーン解除
       function exitFullScreen() {
         if (document.exitFullscreen) {
           document.exitFullscreen();
         } else if (document.webkitExitFullscreen) {
-          // Safari
           document.webkitExitFullscreen();
         }
+
+        // 解除ボタンを非表示に
+        document.querySelector(".fs-exit-button").style.display = "none";
+        // フルスクリーンボタンを再表示
+        document.querySelector(".fs-button").style.display = "flex";
       }
 
       // 🎨 カラーパレット生成
