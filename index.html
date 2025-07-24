@@ -1,3 +1,5 @@
+バックアップ！ 7/24スタート時 iOS向けにかいてたところを消す
+
 <!DOCTYPE html>
 <html lang="ja">
   <head>
@@ -13,14 +15,6 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-
-    <!-- ✅ iOSホーム画面追加対応 -->
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
-    <link rel="apple-touch-icon" href="icon.png" />
 
     <style>
       /* フルスクリーン用のスタイル */
@@ -132,10 +126,6 @@
         dataArray,
         smoothRMS = 0;
 
-      // ✅ iOSアドレスバーを隠す
-      window.addEventListener("load", () => {
-        setTimeout(() => window.scrollTo(0, 1), 100);
-      });
       // フルスクリーン開始
       function enterFullScreen() {
         const element = document.documentElement;
