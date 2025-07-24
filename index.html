@@ -231,16 +231,23 @@
         let rms = Math.sqrt(sum / dataArray.length);
         smoothRMS = smoothRMS * 0.9 + rms * 0.1;
 
+        const GAIN_MULTIPLIER = 8;
+        const BASE_BLEND = 0.2; // ← これが HSL の BASE_LIGHTNESS に相当（0〜1）
+        const MAX_BLEND_RANGE = 0.7; // ← これが LIGHTNESS_RANGE に相当（0〜1）
+
+        // 明滅割合（0〜1）
         let brightness = Math.min(1, (smoothRMS * GAIN_MULTIPLIER) / 128);
+        // blend率をHSL的に再構成
+        let blend = BASE_BLEND + brightness * MAX_BLEND_RANGE;
+        blend = Math.min(1, blend); // 念のため制限
 
         const target = hexToRgb(selectedColor);
-        const base = { r: 50, g: 50, b: 50 }; // 暗いバージョンの基準（黒）
+        const base = { r: 255, g: 255, b: 255 }; // ← 明るめのグレー〜白背景
 
-        // RGBを線形補間（暗 → 選んだ色）
         const lerpColor = {
-          r: Math.round(base.r + (target.r - base.r) * brightness),
-          g: Math.round(base.g + (target.g - base.g) * brightness),
-          b: Math.round(base.b + (target.b - base.b) * brightness),
+          r: Math.round(base.r + (target.r - base.r) * blend),
+          g: Math.round(base.g + (target.g - base.g) * blend),
+          b: Math.round(base.b + (target.b - base.b) * blend),
         };
 
         document.body.style.backgroundColor = `rgb(${lerpColor.r}, ${lerpColor.g}, ${lerpColor.b})`;
