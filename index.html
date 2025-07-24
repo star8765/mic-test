@@ -94,11 +94,21 @@
         z-index: 1000;
         transition: opacity 0.5s ease;
       }
+      #memo {
+        position: absolute;
+        top: 80px; /* パレットが top: 30px なので、その下あたり */
+        left: 10px;
+        color: white;
+        font-size: 14px;
+        background: transparent;
+        z-index: 99;
+      }
     </style>
   </head>
   <body>
     <button id="startBtn">Tap to Start Mic</button>
     <div id="palette"></div>
+    <div id="memo">メモ追加</div>
     <button class="fs-button" onclick="enterFullScreen()">
       <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
     </button>
