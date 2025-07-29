@@ -128,7 +128,7 @@
   <body>
     <button id="startBtn">Tap to Start Mic</button>
     <div id="palette"></div>
-    <div id="memo">更新メモ：7/24オートゲイン、フルスクリーン追加</div>
+    <div id="memo">更新メモ：7/29 フルスクリーン時スリープ防止追加</div>
     <button class="fs-button" onclick="enterFullScreen()">
       <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
     </button>
@@ -157,34 +157,54 @@
         dataArray,
         smoothRMS = 0;
 
+      let wakeLock = null;
+
       // フルスクリーン開始
-      function enterFullScreen() {
+      async function enterFullScreen() {
         const element = document.documentElement;
 
         if (element.requestFullscreen) {
-          element.requestFullscreen();
+          await element.requestFullscreen();
         } else if (element.webkitRequestFullscreen) {
-          element.webkitRequestFullscreen();
+          await element.webkitRequestFullscreen();
         }
 
-        // フルスクリーンボタンを非表示に
+        // フルスクリーンボタンの切替
         document.querySelector(".fs-button").style.display = "none";
-        // 解除ボタンを表示
         document.querySelector(".fs-exit-button").style.display = "flex";
+
+        // 🔒 Wake Lock（スリープ防止）を要求
+        try {
+          if ("wakeLock" in navigator) {
+            wakeLock = await navigator.wakeLock.request("screen");
+            console.log("Wake Lock 有効");
+          }
+        } catch (err) {
+          console.error("Wake Lock エラー:", err);
+        }
       }
 
       // フルスクリーン解除
-      function exitFullScreen() {
+      async function exitFullScreen() {
         if (document.exitFullscreen) {
-          document.exitFullscreen();
+          await document.exitFullscreen();
         } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
+          await document.webkitExitFullscreen();
         }
 
-        // 解除ボタンを非表示に
         document.querySelector(".fs-exit-button").style.display = "none";
-        // フルスクリーンボタンを再表示
         document.querySelector(".fs-button").style.display = "flex";
+
+        // 🔓 Wake Lock 解除
+        if (wakeLock !== null) {
+          try {
+            await wakeLock.release();
+            wakeLock = null;
+            console.log("Wake Lock 解除");
+          } catch (err) {
+            console.error("Wake Lock 解放エラー:", err);
+          }
+        }
       }
 
       // 🎨 カラーパレット生成
