@@ -129,7 +129,7 @@
   <body>
     <button id="startBtn">Tap to Start Mic</button>
     <div id="palette"></div>
-    <div id="memo">更新メモ：7/31ローカルでも動くように</div>
+    <div id="memo">更新メモ：7/29 フルスクリーン時スリープ防止追加、フラッシュ</div>
     <button class="fs-button" onclick="enterFullScreen()">
       <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
     </button>
@@ -278,11 +278,11 @@
         }
 
         let rms = Math.sqrt(sum / dataArray.length);
-        smoothRMS = smoothRMS * 0.9 + rms * 0.1;
+        smoothRMS = smoothRMS * 0.6 + rms * 0.4;
 
-        const GAIN_MULTIPLIER = 15;
-        const BASE_BLEND = 0.2; // ← これが HSL の BASE_LIGHTNESS に相当（0〜1）
-        const MAX_BLEND_RANGE = 0.7; // ← これが LIGHTNESS_RANGE に相当（0〜1）
+        const GAIN_MULTIPLIER = 20;
+        const BASE_BLEND = 0.1; // ← これが HSL の BASE_LIGHTNESS に相当（0〜1）
+        const MAX_BLEND_RANGE = 0.9; // ← これが LIGHTNESS_RANGE に相当（0〜1）
 
         // 明滅割合（0〜1）
         let brightness = Math.min(1, (smoothRMS * GAIN_MULTIPLIER) / 128);
