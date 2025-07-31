@@ -129,7 +129,7 @@
   <body>
     <button id="startBtn">Tap to Start Mic</button>
     <div id="palette"></div>
-    <div id="memo">更新メモ：7/31 0.9、オートゲインオフ</div>
+    <div id="memo">更新メモ：7/31 0.9オートゲインオフ</div>
     <button class="fs-button" onclick="enterFullScreen()">
       <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
     </button>
@@ -241,7 +241,9 @@
           const stream = await navigator.mediaDevices.getUserMedia({
             audio: true,
           });
+          micSource = audioContext.createMediaStreamSource(stream);
 
+          // 🔊 アナライザにつなぐ（オートゲインなし）
           analyser = audioContext.createAnalyser();
           analyser.fftSize = 2048;
 
