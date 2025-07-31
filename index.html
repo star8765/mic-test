@@ -129,7 +129,7 @@
   <body>
     <button id="startBtn">Tap to Start Mic</button>
     <div id="palette"></div>
-    <div id="memo">更新メモ：7/31 0.9</div>
+    <div id="memo">更新メモ：7/31 0.9、オートゲインオフ</div>
     <button class="fs-button" onclick="enterFullScreen()">
       <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
     </button>
@@ -242,22 +242,10 @@
             audio: true,
           });
 
-          micSource = audioContext.createMediaStreamSource(stream);
-
-          // 🎧 自動ゲイン補正（DynamicsCompressorNode）
-          const compressor = audioContext.createDynamicsCompressor();
-          compressor.threshold.setValueAtTime(-50, audioContext.currentTime);
-          compressor.knee.setValueAtTime(40, audioContext.currentTime);
-          compressor.ratio.setValueAtTime(12, audioContext.currentTime);
-          compressor.attack.setValueAtTime(0.003, audioContext.currentTime);
-          compressor.release.setValueAtTime(0.25, audioContext.currentTime);
-
-          // 🔊 アナライザにつなぐ
           analyser = audioContext.createAnalyser();
           analyser.fftSize = 2048;
 
-          micSource.connect(compressor);
-          compressor.connect(analyser);
+          micSource.connect(analyser);
 
           dataArray = new Uint8Array(analyser.fftSize);
 
