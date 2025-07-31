@@ -129,7 +129,7 @@
   <body>
     <button id="startBtn">Tap to Start Mic</button>
     <div id="palette"></div>
-    <div id="memo">更新メモ：7/31 0.4</div>
+    <div id="memo">更新メモ：7/31 0.9</div>
     <button class="fs-button" onclick="enterFullScreen()">
       <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
     </button>
@@ -278,7 +278,14 @@
         }
 
         let rms = Math.sqrt(sum / dataArray.length);
-        smoothRMS = smoothRMS * 0.3 + rms * 0.4;
+        // 音の強さを計算（rms）したあと
+        if (rms > smoothRMS) {
+          // 音が大きくなったときは即追従
+          smoothRMS = rms;
+        } else {
+          // 音が小さくなったときはなめらかに減衰
+          smoothRMS = smoothRMS * 0.9 + rms * 0.1;
+        }
 
         const GAIN_MULTIPLIER = 20;
         const BASE_BLEND = 0.1; // ← これが HSL の BASE_LIGHTNESS に相当（0〜1）
