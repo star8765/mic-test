@@ -39,6 +39,13 @@
         border-radius: 8px;
         z-index: 100;
       }
+      #micSelect {
+        position: absolute;
+        top: 20px;
+        right: 10px;
+        z-index: 99;
+        font-size: 16px;
+      }
       #palette {
         position: absolute;
         top: 30px;
@@ -93,19 +100,13 @@
         background: transparent;
         z-index: 99;
       }
-      #micSelect {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 1000;
-      }
     </style>
   </head>
   <body>
-    <button id="startBtn">Tap to Start Mic</button>
     <select id="micSelect"></select>
+    <button id="startBtn">Tap to Start Mic</button>
     <div id="palette"></div>
-    <div id="memo">更新メモ：7/31 マイク選択機能追加</div>
+    <div id="memo">更新メモ：7/31 外部マイク選択対応</div>
     <button class="fs-button" onclick="enterFullScreen()">
       <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
     </button>
@@ -124,25 +125,15 @@
         "#FFFFFF",
       ];
       let selectedColor = colorOptions[0];
+      const startBtn = document.getElementById("startBtn");
+      const palette = document.getElementById("palette");
+      const micSelect = document.getElementById("micSelect");
       let audioContext,
         analyser,
         micSource,
         dataArray,
         smoothRMS = 0;
       let wakeLock = null;
-
-      async function populateMicDevices() {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioInputs = devices.filter((d) => d.kind === "audioinput");
-        const select = document.getElementById("micSelect");
-        select.innerHTML = "";
-        audioInputs.forEach((device, index) => {
-          const option = document.createElement("option");
-          option.value = device.deviceId;
-          option.text = device.label || `マイク ${index + 1}`;
-          select.appendChild(option);
-        });
-      }
 
       async function enterFullScreen() {
         const element = document.documentElement;
@@ -175,7 +166,6 @@
         }
       }
 
-      const palette = document.getElementById("palette");
       colorOptions.forEach((color) => {
         const btn = document.createElement("button");
         btn.className = "colorBtn";
@@ -198,28 +188,41 @@
       }
       updatePalette();
 
-      document
-        .getElementById("startBtn")
-        .addEventListener("click", async () => {
-          await populateMicDevices();
-          const selectedId = document.getElementById("micSelect").value;
-          document.getElementById("startBtn").style.display = "none";
-          audioContext = new (window.AudioContext ||
-            window.webkitAudioContext)();
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-              audio: selectedId ? { deviceId: { exact: selectedId } } : true,
-            });
-            micSource = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 2048;
-            micSource.connect(analyser);
-            dataArray = new Uint8Array(analyser.fftSize);
-            animate();
-          } catch (err) {
-            alert("マイク取得に失敗しました: " + err.message);
-          }
+      async function updateMicSelectOptions() {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(
+          (device) => device.kind === "audioinput"
+        );
+        micSelect.innerHTML = "";
+        audioInputs.forEach((device) => {
+          const option = document.createElement("option");
+          option.value = device.deviceId;
+          option.textContent =
+            device.label || `マイク (${micSelect.length + 1})`;
+          micSelect.appendChild(option);
         });
+      }
+
+      startBtn.addEventListener("click", async () => {
+        startBtn.style.display = "none";
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        try {
+          await navigator.mediaDevices.getUserMedia({ audio: true });
+          await updateMicSelectOptions();
+          const selectedId = micSelect.value;
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { deviceId: selectedId ? { exact: selectedId } : undefined },
+          });
+          micSource = audioContext.createMediaStreamSource(stream);
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 2048;
+          micSource.connect(analyser);
+          dataArray = new Uint8Array(analyser.fftSize);
+          animate();
+        } catch (err) {
+          alert("マイク取得に失敗しました: " + err.message);
+        }
+      });
 
       function animate() {
         requestAnimationFrame(animate);
@@ -237,7 +240,9 @@
         const BASE_BLEND = 0.1;
         const MAX_BLEND_RANGE = 0.9;
         let brightness = Math.min(1, (smoothRMS * GAIN_MULTIPLIER) / 128);
-        let blend = Math.min(1, BASE_BLEND + brightness * MAX_BLEND_RANGE);
+        let blend = BASE_BLEND + brightness * MAX_BLEND_RANGE;
+        blend = Math.min(1, blend);
+
         const target = hexToRgb(selectedColor);
         const base = { r: 55, g: 55, b: 55 };
         const lerpColor = {
