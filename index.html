@@ -27,9 +27,10 @@
         align-items: center;
         background-color: black;
       }
+      #grantBtn,
       #startBtn {
         position: absolute;
-        top: 50%;
+        top: 45%;
         left: 50%;
         transform: translate(-50%, -50%);
         padding: 1em 2em;
@@ -39,12 +40,19 @@
         border-radius: 8px;
         z-index: 100;
       }
-      #micSelect {
+      #startBtn {
+        top: 55%;
+        display: none;
+      }
+      #deviceSelect {
         position: absolute;
-        top: 20px;
-        right: 10px;
-        z-index: 99;
+        top: 30%;
+        left: 50%;
+        transform: translateX(-50%);
         font-size: 16px;
+        padding: 0.5em;
+        display: none;
+        z-index: 100;
       }
       #palette {
         position: absolute;
@@ -97,16 +105,16 @@
         left: 10px;
         color: white;
         font-size: 14px;
-        background: transparent;
         z-index: 99;
       }
     </style>
   </head>
   <body>
-    <select id="micSelect"></select>
-    <button id="startBtn">Tap to Start Mic</button>
+    <button id="grantBtn">マイクの使用を許可</button>
+    <select id="deviceSelect"></select>
+    <button id="startBtn">このマイクで開始</button>
     <div id="palette"></div>
-    <div id="memo">更新メモ：7/31 外部マイク選択対応</div>
+    <div id="memo">更新メモ：7/31 マイク選択UI追加</div>
     <button class="fs-button" onclick="enterFullScreen()">
       <i class="fa-solid fa-up-right-and-down-left-from-center"></i>
     </button>
@@ -114,6 +122,10 @@
       <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
     </button>
     <script>
+      const grantBtn = document.getElementById("grantBtn");
+      const startBtn = document.getElementById("startBtn");
+      const deviceSelect = document.getElementById("deviceSelect");
+      const palette = document.getElementById("palette");
       const colorOptions = [
         "#FFD93D",
         "#3ABEFF",
@@ -125,45 +137,77 @@
         "#FFFFFF",
       ];
       let selectedColor = colorOptions[0];
-      const startBtn = document.getElementById("startBtn");
-      const palette = document.getElementById("palette");
-      const micSelect = document.getElementById("micSelect");
-      let audioContext,
-        analyser,
-        micSource,
-        dataArray,
-        smoothRMS = 0;
+      let audioContext, analyser, micSource, dataArray, smoothRMS = 0;
       let wakeLock = null;
 
-      async function enterFullScreen() {
-        const element = document.documentElement;
-        if (element.requestFullscreen) await element.requestFullscreen();
-        else if (element.webkitRequestFullscreen)
-          await element.webkitRequestFullscreen();
-        document.querySelector(".fs-button").style.display = "none";
-        document.querySelector(".fs-exit-button").style.display = "flex";
+      grantBtn.onclick = async () => {
+        grantBtn.style.display = "none";
         try {
-          if ("wakeLock" in navigator)
-            wakeLock = await navigator.wakeLock.request("screen");
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach(t => t.stop());
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const audioInputs = devices.filter(d => d.kind === "audioinput");
+          deviceSelect.innerHTML = "";
+          audioInputs.forEach((device) => {
+            const option = document.createElement("option");
+            option.value = device.deviceId;
+            option.text = device.label || "Microphone";
+            deviceSelect.appendChild(option);
+          });
+          deviceSelect.style.display = "block";
+          startBtn.style.display = "block";
         } catch (err) {
-          console.error("Wake Lock エラー:", err);
+          alert("マイク許可が必要です: " + err.message);
         }
-      }
+      };
 
-      async function exitFullScreen() {
-        if (document.exitFullscreen) await document.exitFullscreen();
-        else if (document.webkitExitFullscreen)
-          await document.webkitExitFullscreen();
-        document.querySelector(".fs-exit-button").style.display = "none";
-        document.querySelector(".fs-button").style.display = "flex";
-        if (wakeLock !== null) {
-          try {
-            await wakeLock.release();
-            wakeLock = null;
-          } catch (err) {
-            console.error("Wake Lock 解放エラー:", err);
-          }
+      startBtn.onclick = async () => {
+        deviceSelect.style.display = "none";
+        startBtn.style.display = "none";
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { deviceId: { exact: deviceSelect.value } },
+          });
+          micSource = audioContext.createMediaStreamSource(stream);
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 2048;
+          micSource.connect(analyser);
+          dataArray = new Uint8Array(analyser.fftSize);
+          animate();
+        } catch (err) {
+          alert("マイク取得失敗: " + err.message);
         }
+      };
+
+      function animate() {
+        requestAnimationFrame(animate);
+        analyser.getByteTimeDomainData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          let val = dataArray[i] - 128;
+          sum += val * val;
+        }
+        let rms = Math.sqrt(sum / dataArray.length);
+        if (rms > smoothRMS) {
+          smoothRMS = rms;
+        } else {
+          smoothRMS = smoothRMS * 0.9 + rms * 0.1;
+        }
+        const GAIN_MULTIPLIER = 20;
+        const BASE_BLEND = 0.1;
+        const MAX_BLEND_RANGE = 0.9;
+        let brightness = Math.min(1, (smoothRMS * GAIN_MULTIPLIER) / 128);
+        let blend = BASE_BLEND + brightness * MAX_BLEND_RANGE;
+        blend = Math.min(1, blend);
+        const target = hexToRgb(selectedColor);
+        const base = { r: 55, g: 55, b: 55 };
+        const lerpColor = {
+          r: Math.round(base.r + (target.r - base.r) * blend),
+          g: Math.round(base.g + (target.g - base.g) * blend),
+          b: Math.round(base.b + (target.b - base.b) * blend),
+        };
+        document.body.style.backgroundColor = `rgb(${lerpColor.r}, ${lerpColor.g}, ${lerpColor.b})`;
       }
 
       colorOptions.forEach((color) => {
@@ -180,77 +224,39 @@
 
       function updatePalette() {
         document.querySelectorAll(".colorBtn").forEach((btn) => {
-          btn.classList.toggle(
-            "selected",
-            btn.getAttribute("data-color") === selectedColor
-          );
+          if (btn.getAttribute("data-color") === selectedColor) {
+            btn.classList.add("selected");
+          } else {
+            btn.classList.remove("selected");
+          }
         });
       }
       updatePalette();
 
-      async function updateMicSelectOptions() {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioInputs = devices.filter(
-          (device) => device.kind === "audioinput"
-        );
-        micSelect.innerHTML = "";
-        audioInputs.forEach((device) => {
-          const option = document.createElement("option");
-          option.value = device.deviceId;
-          option.textContent =
-            device.label || `マイク (${micSelect.length + 1})`;
-          micSelect.appendChild(option);
-        });
+      async function enterFullScreen() {
+        const element = document.documentElement;
+        if (element.requestFullscreen) await element.requestFullscreen();
+        else if (element.webkitRequestFullscreen) await element.webkitRequestFullscreen();
+        document.querySelector(".fs-button").style.display = "none";
+        document.querySelector(".fs-exit-button").style.display = "flex";
+        try {
+          if ("wakeLock" in navigator) {
+            wakeLock = await navigator.wakeLock.request("screen");
+          }
+        } catch (err) { console.error("Wake Lock エラー:", err); }
       }
 
-      startBtn.addEventListener("click", async () => {
-        startBtn.style.display = "none";
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        try {
-          await navigator.mediaDevices.getUserMedia({ audio: true });
-          await updateMicSelectOptions();
-          const selectedId = micSelect.value;
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: { deviceId: selectedId ? { exact: selectedId } : undefined },
-          });
-          micSource = audioContext.createMediaStreamSource(stream);
-          analyser = audioContext.createAnalyser();
-          analyser.fftSize = 2048;
-          micSource.connect(analyser);
-          dataArray = new Uint8Array(analyser.fftSize);
-          animate();
-        } catch (err) {
-          alert("マイク取得に失敗しました: " + err.message);
+      async function exitFullScreen() {
+        if (document.exitFullscreen) await document.exitFullscreen();
+        else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+        document.querySelector(".fs-exit-button").style.display = "none";
+        document.querySelector(".fs-button").style.display = "flex";
+        if (wakeLock !== null) {
+          try {
+            await wakeLock.release();
+            wakeLock = null;
+          } catch (err) { console.error("Wake Lock 解放エラー:", err); }
         }
-      });
-
-      function animate() {
-        requestAnimationFrame(animate);
-        analyser.getByteTimeDomainData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          let val = dataArray[i] - 128;
-          sum += val * val;
-        }
-        let rms = Math.sqrt(sum / dataArray.length);
-        if (rms > smoothRMS) smoothRMS = rms;
-        else smoothRMS = smoothRMS * 0.9 + rms * 0.1;
-
-        const GAIN_MULTIPLIER = 20;
-        const BASE_BLEND = 0.1;
-        const MAX_BLEND_RANGE = 0.9;
-        let brightness = Math.min(1, (smoothRMS * GAIN_MULTIPLIER) / 128);
-        let blend = BASE_BLEND + brightness * MAX_BLEND_RANGE;
-        blend = Math.min(1, blend);
-
-        const target = hexToRgb(selectedColor);
-        const base = { r: 55, g: 55, b: 55 };
-        const lerpColor = {
-          r: Math.round(base.r + (target.r - base.r) * blend),
-          g: Math.round(base.g + (target.g - base.g) * blend),
-          b: Math.round(base.b + (target.b - base.b) * blend),
-        };
-        document.body.style.backgroundColor = `rgb(${lerpColor.r}, ${lerpColor.g}, ${lerpColor.b})`;
       }
 
       function hexToRgb(hex) {
@@ -262,10 +268,11 @@
       }
 
       if ("serviceWorker" in navigator) {
-        navigator.serviceWorker
-          .register("service-worker.js")
-          .then(() => console.log("Service Worker 登録完了"))
-          .catch((err) => console.error("Service Worker 登録失敗:", err));
+        navigator.serviceWorker.register("service-worker.js").then(() => {
+          console.log("Service Worker 登録完了");
+        }).catch((err) => {
+          console.error("Service Worker 登録失敗:", err);
+        });
       }
     </script>
   </body>
